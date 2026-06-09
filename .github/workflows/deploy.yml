@@ -1,0 +1,19 @@
+name: Build and Push to Yandex Cloud
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Login to Yandex Cloud Container Registry
+        run: |
+          echo "Добавим позже"
+      
+      - name: Build and push image
+        run: |
+          echo "Соберем позже"
