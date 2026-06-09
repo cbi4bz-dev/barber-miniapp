@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: Build and Push to Yandex Cloud
 
 on:
@@ -5,15 +6,29 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Login to Yandex Cloud Container Registry
+        uses: yc-actions/yc-cr-login@v3
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Build and push Docker image
         run: |
-          echo "Добавим позже"
-      
-      - name: Build and push image
+          docker build -t cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }} .
+          docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }}
+
+      - name: Deploy to Serverless Container
         run: |
-          echo "Соберем позже"
+          yc serverless container revision deploy \
+            --container-name barber-api \
+            --folder-id ${{ secrets.YC_FOLDER_ID }} \
+            --image cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }} \
+            --memory 128M \
+            --execution-timeout 10s \
+            --concurrency 10 \
+            --service-account-id ajeeflaf9kfroreomlgd
