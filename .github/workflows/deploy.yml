@@ -1,46 +1,35 @@
-# .github/workflows/deploy.yml
-name: Build and Push to Yandex Cloud
+name: Deploy to Yandex Cloud
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Устанавливаем Yandex Cloud CLI
-      - name: Install Yandex Cloud CLI
-        uses: nightstory/setup-yc@v1
-        with:
-          enable-cache: true
-
-      # Сохраняем JSON-ключ в файл и настраиваем yc
-      - name: Configure Yandex Cloud CLI
+      - uses: actions/checkout@v4
+      
+      - name: Install yc
         run: |
-          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/sa-key.json
-          yc config set service-account-key /tmp/sa-key.json
-          yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
-
-      - name: Login to Yandex Cloud Container Registry
-        uses: yc-actions/yc-cr-login@v3
-        with:
-          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-
-      - name: Build and push Docker image
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+      
+      - name: Configure yc
         run: |
-          docker build -t cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }} .
-          docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }}
-
-      - name: Deploy to Serverless Container
+          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/key.json
+          yc config set service-account-key /tmp/key.json
+          yc config set folder-id b1gsraf10hgd6naabfhg
+      
+      - name: Build and push
+        run: |
+          docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
+          docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
+      
+      - name: Deploy
         run: |
           yc serverless container revision deploy \
             --container-name barber-api \
-            --image cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }} \
+            --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
             --memory 128M \
-            --execution-timeout 10s \
-            --concurrency 10 \
             --service-account-id ajefln1mva94iejdnf1o
