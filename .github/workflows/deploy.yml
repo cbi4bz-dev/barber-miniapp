@@ -1,5 +1,53 @@
-- name: Debug YC
-  run: |
-    yc config get cloud-id
-    yc config get folder-id
-    yc iam service-account list
+name: Deploy
+
+on:
+push:
+branches: [ main ]
+
+jobs:
+deploy:
+runs-on: ubuntu-latest
+
+```
+steps:
+  - uses: actions/checkout@v4
+
+  - name: Install YC CLI
+    run: |
+      curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+      echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+
+  - name: Configure YC
+    run: |
+      echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/key.json
+
+      yc config profile create ci || true
+      yc config set service-account-key /tmp/key.json
+      yc config set folder-id b1gsraf10hgd6naabfhg
+
+  - name: Debug YC
+    run: |
+      yc config list
+      yc iam service-account list
+      yc serverless container get barber-api
+
+  - name: Docker login
+    run: |
+      yc container registry configure-docker
+
+  - name: Build image
+    run: |
+      docker build \
+        -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
+
+  - name: Push image
+    run: |
+      docker push \
+        cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
+
+  - name: Deploy
+    run: |
+      yc serverless container revision deploy \
+        --container-name barber-api \
+        --
+```
