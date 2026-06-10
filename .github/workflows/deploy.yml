@@ -1,4 +1,4 @@
-name: Deploy to Yandex Cloud
+name: Deploy
 
 on:
   push:
@@ -10,35 +10,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install yc
+      - name: Install YC CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+          echo "/home/runner/yandex-cloud/bin" >> $GITHUB_PATH
       
-      - name: Auth with service account
+      - name: Auth
         run: |
-          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/key.json
-          yc config set service-account-key /tmp/key.json
-          yc config set folder-id b1gsraf10hgd6naabfhg
+          echo "${{ secrets.YC_SA_JSON_CREDENTIALS }}" > /tmp/key.json
+          /home/runner/yandex-cloud/bin/yc config set service-account-key /tmp/key.json
+          /home/runner/yandex-cloud/bin/yc config set folder-id b1gsraf10hgd6naabfhg
       
-      - name: Get service account ID
+      - name: Docker Auth
         run: |
-          SA_ID=$(yc iam service-account list --format json | jq -r '.[0].id')
-          echo "SA_ID=$SA_ID" >> $GITHUB_ENV
+          /home/runner/yandex-cloud/bin/yc container registry configure-docker
       
-      - name: Docker login
-        run: |
-          yc container registry configure-docker
-      
-      - name: Build and push
+      - name: Build
         run: |
           docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
+      
+      - name: Push
+        run: |
           docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
       
       - name: Deploy
         run: |
-          yc serverless container revision deploy \
+          /home/runner/yandex-cloud/bin/yc serverless container revision deploy \
             --container-name barber-api \
             --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
             --memory 128M \
-            --service-account-id ${{ env.SA_ID }}
+            --service-account-id ajekd46q3hnrg2r2m166
