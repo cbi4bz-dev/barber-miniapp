@@ -21,6 +21,10 @@ jobs:
           yc config set service-account-key /tmp/key.json
           yc config set folder-id b1gsraf10hgd6naabfhg
       
+      - name: Login to Docker Registry
+        run: |
+          yc container registry configure-docker
+      
       - name: Build and push
         run: |
           docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
