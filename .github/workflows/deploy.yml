@@ -10,33 +10,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Yandex Cloud CLI
+      - name: Install yc
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
       
-      - name: Authenticate via service account
+      - name: Auth with service account
         run: |
-          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/sa-key.json
-          yc config set service-account-key /tmp/sa-key.json
+          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/key.json
+          yc config set service-account-key /tmp/key.json
           yc config set folder-id b1gsraf10hgd6naabfhg
       
-      - name: Login to Container Registry
+      - name: Get service account ID
+        run: |
+          SA_ID=$(yc iam service-account list --format json | jq -r '.[0].id')
+          echo "SA_ID=$SA_ID" >> $GITHUB_ENV
+      
+      - name: Docker login
         run: |
           yc container registry configure-docker
       
-      - name: Build Docker image
+      - name: Build and push
         run: |
           docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
-      
-      - name: Push Docker image
-        run: |
           docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
       
-      - name: Deploy to Serverless Container
+      - name: Deploy
         run: |
           yc serverless container revision deploy \
             --container-name barber-api \
             --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
             --memory 128M \
-            --service-account-id ajekd46q3hnrg2r2m166
+            --service-account-id ${{ env.SA_ID }}
