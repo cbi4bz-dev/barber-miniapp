@@ -35,4 +35,5 @@ jobs:
           yc serverless container revision deploy \
             --container-name barber-api \
             --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
-            --memory 128M
+            --memory 128M \
+            --service-account-id ajekd46q3hnrg2r2m166
