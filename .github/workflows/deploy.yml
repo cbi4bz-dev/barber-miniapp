@@ -42,4 +42,5 @@ jobs:
             --image cr.yandex/${{ secrets.YC_REGISTRY_ID }}/barber-api:${{ github.sha }} \
             --memory 128M \
             --execution-timeout 10s \
-            --concurrency 10
+            --concurrency 10 \
+            --service-account-id ajeeflaf9kfroreomlgd
