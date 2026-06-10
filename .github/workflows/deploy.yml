@@ -21,7 +21,7 @@ jobs:
           yc config set service-account-key /tmp/key.json
           yc config set folder-id b1gsraf10hgd6naabfhg
       
-      - name: Login to Docker Registry
+      - name: Docker login
         run: |
           yc container registry configure-docker
       
@@ -33,6 +33,6 @@ jobs:
       - name: Deploy
         run: |
           yc serverless container revision deploy \
-            --container-name barber-api \
+            --container-id bba8bdnhfq2gujgm4qo5 \
             --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
             --memory 128M
