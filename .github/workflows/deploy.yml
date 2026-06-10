@@ -9,37 +9,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Install YC CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo "/home/runner/yandex-cloud/bin" >> $GITHUB_PATH
-
-      # Получаем IAM-токен из JSON-ключа
-      - name: Get IAM token
-        id: get-token
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+      
+      - name: Auth with OAuth
         run: |
-          IAM_TOKEN=$(cat <<< '${{ secrets.YC_SA_JSON_CREDENTIALS }}' | jq -r .private_key | yc iam create-token --service-account-key -)
-          echo "IAM_TOKEN=$IAM_TOKEN" >> $GITHUB_OUTPUT
-
-      - name: Auth via IAM token
-        run: |
-          yc config set token ${{ steps.get-token.outputs.IAM_TOKEN }}
+          yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
           yc config set folder-id b1gsraf10hgd6naabfhg
-
-      - name: Docker Auth
+      
+      - name: Docker login
         run: yc container registry configure-docker
-
+      
       - name: Build
         run: docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
-
+      
       - name: Push
         run: docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
-
+      
       - name: Deploy
         run: |
           yc serverless container revision deploy \
             --container-name barber-api \
             --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
-            --memory 128M \
-            --service-account-id ajekd46q3hnrg2r2m166
+            --memory 128M
