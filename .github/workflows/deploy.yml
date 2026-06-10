@@ -1,52 +1,42 @@
-name: Deploy
+name: Deploy to Yandex Cloud
 
 on:
-push:
-branches:
-- main
+  push:
+    branches: [ main ]
 
 jobs:
-deploy:
-runs-on: ubuntu-latest
-
-```
-steps:
-  - uses: actions/checkout@v4
-
-  - name: Install YC CLI
-    run: |
-      curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-      echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
-
-  - name: Configure YC
-    run: |
-      echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/key.json
-      yc config set service-account-key /tmp/key.json
-      yc config set folder-id b1gsraf10hgd6naabfhg
-
-  - name: Debug YC
-    run: |
-      yc config list
-      yc iam service-account list
-      yc serverless container get barber-api
-
-  - name: Docker login
-    run: |
-      yc container registry configure-docker
-
-  - name: Build image
-    run: |
-      docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
-
-  - name: Push image
-    run: |
-      docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
-
-  - name: Deploy
-    run: |
-      yc serverless container revision deploy \
-        --container-name barber-api \
-        --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
-        --memory 128M \
-        --service-account-id ajekd46q3hnrg2r2m166
-```
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+      
+      - name: Authenticate via service account
+        run: |
+          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/sa-key.json
+          yc config set service-account-key /tmp/sa-key.json
+          yc config set folder-id b1gsraf10hgd6naabfhg
+      
+      - name: Login to Container Registry
+        run: |
+          yc container registry configure-docker
+      
+      - name: Build Docker image
+        run: |
+          docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
+      
+      - name: Push Docker image
+        run: |
+          docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
+      
+      - name: Deploy to Serverless Container
+        run: |
+          yc serverless container revision deploy \
+            --container-name barber-api \
+            --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
+            --memory 128M \
+            --service-account-id ajekd46q3hnrg2r2m166
