@@ -2,7 +2,8 @@ name: Deploy
 
 on:
 push:
-branches: [ main ]
+branches:
+- main
 
 jobs:
 deploy:
@@ -20,8 +21,6 @@ steps:
   - name: Configure YC
     run: |
       echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > /tmp/key.json
-
-      yc config profile create ci || true
       yc config set service-account-key /tmp/key.json
       yc config set folder-id b1gsraf10hgd6naabfhg
 
@@ -37,17 +36,17 @@ steps:
 
   - name: Build image
     run: |
-      docker build \
-        -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
+      docker build -t cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} .
 
   - name: Push image
     run: |
-      docker push \
-        cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
+      docker push cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }}
 
   - name: Deploy
     run: |
       yc serverless container revision deploy \
         --container-name barber-api \
-        --
+        --image cr.yandex/crpnjodd6609b4b1kg2d/barber-api:${{ github.sha }} \
+        --memory 128M \
+        --service-account-id ajekd46q3hnrg2r2m166
 ```
