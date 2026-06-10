@@ -12,6 +12,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # УСТАНАВЛИВАЕМ YANDEX CLOUD CLI
+      - name: Install Yandex Cloud CLI
+        uses: nightstory/setup-yc@v1
+        with:
+          enable-cache: true
+
       - name: Login to Yandex Cloud Container Registry
         uses: yc-actions/yc-cr-login@v3
         with:
